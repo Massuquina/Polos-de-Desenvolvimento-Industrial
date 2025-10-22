@@ -1,0 +1,29 @@
+# Configurações básicas de segurança
+RewriteEngine On
+
+# Permitir acesso aos ficheiros PHP
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ api.php [QSA,L]
+
+# Configurações CORS (comentadas - configuradas no config.php)
+# Header always set Access-Control-Allow-Origin "*"
+# Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+# Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+
+# Proteger ficheiros sensíveis
+<Files "config.php">
+    Require all denied
+</Files>
+
+<Files "database.php">
+    Require all denied
+</Files>
+
+<Files "*.log">
+    Require all denied
+</Files>
+
+<FilesMatch "\.(bak|backup|old|tmp)$">
+    Require all denied
+</FilesMatch>

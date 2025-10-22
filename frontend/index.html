@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDI Angola - Gestão de Infraestruturas</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/improvements.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <img src="images/logo-angola.png" alt="República de Angola" class="logo-img">
+                    <!--<div class="logo-text">
+                        <h1>PDI Angola</h1>
+                        <p>Gestão de Infraestruturas</p>
+                    </div>-->
+                </div>
+                <nav class="nav" id="nav">
+                    <ul class="nav-list">
+                        <li><a href="#dashboard" class="nav-link active">Dashboard</a></li>
+                        <li><a href="#infraestruturas" class="nav-link">Infraestruturas</a></li>
+                        <li><a href="#lotes" class="nav-link">Lotes</a></li>
+                        <li><a href="#empresas" class="nav-link">Empresas</a></li>
+                        <li><a href="#polos" class="nav-link">Polos</a></li>
+                        <li><a href="#mapa" class="nav-link">Mapa</a></li>
+                        <li><a href="#relatorios" class="nav-link">Relatórios</a></li>
+                    </ul>
+                </nav>
+                <div class="header-actions">
+                    <div class="user-menu" id="userMenu">
+                        <button class="user-btn" id="userBtn">
+                            <i class="fas fa-user"></i>
+                            <span id="userName">Utilizador</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="user-dropdown" id="userDropdown">
+                            <a href="#perfil"><i class="fas fa-user"></i> Perfil</a>
+                            <a href="#configuracoes"><i class="fas fa-cog"></i> Configurações</a>
+                            <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Sair</a>
+                        </div>
+                    </div>
+                    <button class="mobile-menu-btn" id="mobileMenuBtn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Login Modal -->
+        <div class="modal" id="loginModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Iniciar Sessão</h2>
+                    <button class="modal-close" id="closeLoginModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="loginForm" class="login-form" data-validate>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Senha</label>
+                        <input type="password" id="password" name="password" required minlength="6" autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Entrar
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section active">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Dashboard</h2>
+                    <p>Visão geral das infraestruturas nos Polos de Desenvolvimento Industrial</p>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-industry"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalInfraestruturas">0</h3>
+                            <p>Total de Infraestruturas</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalPolos">0</h3>
+                            <p>Polos Ativos</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-map"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalProvincias">0</h3>
+                            <p>Províncias</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="percentualConcluidas">0%</h3>
+                            <p>Infraestruturas Concluídas</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalEmpresas">0</h3>
+                            <p>Total de Empresas</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalLotes">0</h3>
+                            <p>Total de Lotes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-industry"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalSectores">0</h3>
+                            <p>Sectores Industriais</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="taxaOcupacao">0%</h3>
+                            <p>Taxa de Ocupação</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Infraestruturas por Província</h3>
+                        <canvas id="provinciaChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Estado das Infraestruturas</h3>
+                        <canvas id="estadoChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Infraestruturas por Setor</h3>
+                        <canvas id="sectorChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Empresas por Polo</h3>
+                        <canvas id="empresasPoloChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Infraestruturas Section -->
+        <section id="infraestruturas" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Gestão de Infraestruturas</h2>
+                    <button class="btn btn-primary" id="addInfraestruturaBtn">
+                        <i class="fas fa-plus"></i>
+                        Nova Infraestrutura
+                    </button>
+                </div>
+
+                <!-- Filters -->
+                <div class="filters">
+                    <div class="filter-group">
+                        <label for="filterProvincia">Província</label>
+                        <select id="filterProvincia">
+                            <option value="">Todas as Províncias</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterPolo">Polo</label>
+                        <select id="filterPolo">
+                            <option value="">Todos os Polos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterSector">Sector</label>
+                        <select id="filterSector">
+                            <option value="">Todos os Sectores</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn btn-secondary" id="clearFilters">
+                            <i class="fas fa-times"></i>
+                            Limpar Filtros
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Infraestruturas Table -->
+                <div class="table-container">
+                    <table class="data-table" id="infraestruturasTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Polo</th>
+                                <th>Província</th>
+                                <th>Município</th>
+                                <th>Sector</th>
+                                <th>Estado</th>
+                                <th>Criado em</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="infraestruturasTableBody">
+                            <!-- Dados serão carregados via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" id="pagination">
+                    <!-- Paginação será gerada via JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Lotes Section -->
+        <section id="lotes" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Gestão de Lotes</h2>
+                    <button class="btn btn-primary" id="addLoteBtn">
+                        <i class="fas fa-plus"></i>
+                        Novo Lote
+                    </button>
+                </div>
+
+                <!-- Filters -->
+                <div class="filters">
+                    <div class="filter-group">
+                        <label for="filterLotePolo">Polo</label>
+                        <select id="filterLotePolo">
+                            <option value="">Todos os Polos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterLoteStatus">Status</label>
+                        <select id="filterLoteStatus">
+                            <option value="">Todos os Status</option>
+                            <option value="disponivel">Disponível</option>
+                            <option value="ocupado">Ocupado</option>
+                            <option value="reservado">Reservado</option>
+                            <option value="em_desenvolvimento">Em Desenvolvimento</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn btn-secondary" id="clearLoteFilters">
+                            <i class="fas fa-times"></i>
+                            Limpar Filtros
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lotes Table -->
+                <div class="table-container">
+                    <table class="data-table" id="lotesTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Polo</th>
+                                <th>Nome do Lote</th>
+                                <th>Área (m²)</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lotesTableBody">
+                            <!-- Dados serão carregados via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" id="lotesPagination">
+                    <!-- Paginação será gerada via JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Empresas Section -->
+        <section id="empresas" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Gestão de Empresas</h2>
+                    <button class="btn btn-primary" id="addEmpresaBtn">
+                        <i class="fas fa-plus"></i>
+                        Nova Empresa
+                    </button>
+                </div>
+
+                <!-- Filters -->
+                <div class="filters">
+                    <div class="filter-group">
+                        <label for="filterEmpresaPolo">Polo</label>
+                        <select id="filterEmpresaPolo">
+                            <option value="">Todos os Polos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterEmpresaSector">Sector</label>
+                        <select id="filterEmpresaSector">
+                            <option value="">Todos os Sectores</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterEmpresaStatus">Status</label>
+                        <select id="filterEmpresaStatus">
+                            <option value="">Todos os Status</option>
+                            <option value="ativa">Ativa</option>
+                            <option value="inativa">Inativa</option>
+                            <option value="em_implementacao">Em Implementação</option>
+                            <option value="em_expansao">Em Expansão</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn btn-secondary" id="clearEmpresaFilters">
+                            <i class="fas fa-times"></i>
+                            Limpar Filtros
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Empresas Table -->
+                <div class="table-container">
+                    <table class="data-table" id="empresasTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Polo</th>
+                                <th>Lote</th>
+                                <th>Nome da Empresa</th>
+                                <th>NIF</th>
+                                <th>Sector</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="empresasTableBody">
+                            <!-- Dados serão carregados via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" id="empresasPagination">
+                    <!-- Paginação será gerada via JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Polos Section -->
+        <section id="polos" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Polos de Desenvolvimento Industrial</h2>
+                </div>
+
+                <div class="polos-grid" id="polosGrid">
+                    <!-- Polos serão carregados via JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Mapa Section -->
+        <section id="mapa" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Localização dos Polos</h2>
+                </div>
+
+                <div class="map-container">
+                    <div id="map" class="map"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Relatórios Section -->
+        <section id="relatorios" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Relatórios</h2>
+                </div>
+
+                <div class="reports-grid">
+                    <div class="report-card">
+                        <h3>Relatório Geral</h3>
+                        <p>Relatório completo de todas as infraestruturas</p>
+                        <button class="btn btn-primary">
+                            <i class="fas fa-download"></i>
+                            Gerar PDF
+                        </button>
+                    </div>
+                    <div class="report-card">
+                        <h3>Relatório por Província</h3>
+                        <p>Relatório detalhado por província</p>
+                        <button class="btn btn-primary">
+                            <i class="fas fa-download"></i>
+                            Gerar Excel
+                        </button>
+                    </div>
+                    <div class="report-card">
+                        <h3>Relatório de Estado</h3>
+                        <p>Análise do estado das infraestruturas</p>
+                        <button class="btn btn-primary">
+                            <i class="fas fa-download"></i>
+                            Gerar PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>PDI Angola</h3>
+                    <p>Sistema de Gestão de Infraestruturas em Polos de Desenvolvimento Industrial</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Contactos</h4>
+                    <p>Ministério da Indústria e Comércio</p>
+                    <p>Luanda, Angola</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links Úteis</h4>
+                    <ul>
+                        <li><a href="#">IDIIA</a></li>
+                        <li><a href="#">Ministério da Indústria</a></li>
+                        <li><a href="#">Governo de Angola</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 República de Angola. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Loading Spinner -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/esri-leaflet@3.0.0/dist/esri-leaflet.js"></script>
+    
+    <!-- Configuração centralizada -->
+    <script src="js/config.js"></script>
+    
+    <!-- Novos scripts de melhorias -->
+    <script src="js/utils.js"></script>
+    <script src="js/form-validator.js"></script>
+    <script src="js/ui-components.js"></script>
+    
+    <!-- Scripts originais -->
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/infraestruturas.js"></script>
+    <script src="js/lotes.js"></script>
+    <script src="js/empresas.js"></script>
+    <script src="js/mapa.js"></script>
+</body>
+</html>
+
