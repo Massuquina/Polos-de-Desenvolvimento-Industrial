@@ -1,6 +1,6 @@
 <?php
 // BYPASS_CSRF_CHECKS - Adicionado para resolver problemas de CSRF
-define('BYPASS_CSRF_CHECKS', true);
+define('BYPASS_CSRF_CHECKS', false);
 
 /**
  * Sistema de proteção CSRF
@@ -37,7 +37,10 @@ class CSRF {
     /**
      * Valida um token CSRF
      */
-    public static function validateToken( { if (defined("BYPASS_CSRF_CHECKS") && BYPASS_CSRF_CHECKS) { return true; } $token) {
+    public static function validateToken($token) {
+        if (defined('BYPASS_CSRF_CHECKS') && BYPASS_CSRF_CHECKS) {
+            return true;
+        }
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }

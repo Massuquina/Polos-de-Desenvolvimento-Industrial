@@ -248,7 +248,7 @@ class PDIApp {
      */
     async checkAuthentication() {
         try {
-            const response = await this.apiRequest('auth/check');
+            const response = await this.apiRequest('auth/check', { timeoutMs: 5000 });
             
             if (response.user) {
                 this.currentUser = response.user;
@@ -259,7 +259,7 @@ class PDIApp {
                 this.showLoginModal();
             }
         } catch (error) {
-            console.log('Usuário não autenticado');
+            console.log('Usuário não autenticado ou timeout na verificação:', error && error.message ? error.message : error);
             this.showLoginModal();
         }
     }
@@ -421,7 +421,7 @@ class PDIApp {
         if (previousError) {
             previousError.remove();
         }
-
+        
         this.showLoading();
 
         try {
@@ -434,7 +434,7 @@ class PDIApp {
                 this.currentUser = response.user;
                 this.hideModal('loginModal');
                 this.updateUserInterface();
-                this.initializeManagers(); // Inicializa managers após login
+                this.initializeManagers();
                 this.loadInitialData();
                 this.showNotification('Login realizado com sucesso!', 'success');
             }
@@ -758,6 +758,19 @@ class PDIApp {
         const finalOptions = Object.assign({}, defaultOptions, options || {});
         finalOptions.headers = Object.assign({}, defaultOptions.headers, (options && options.headers) ? options.headers : {});
 
+        // Implementar timeout opcional
+        const controller = new AbortController();
+        const timeoutMs = (options && typeof options.timeoutMs === 'number') ? options.timeoutMs : 0;
+        let timeoutId = null;
+        if (timeoutMs && timeoutMs > 0) {
+            timeoutId = setTimeout(() => {
+                try { controller.abort(); } catch (e) {}
+            }, timeoutMs);
+        }
+        finalOptions.signal = controller.signal;
+        // Remover propriedade customizada para não interferir no fetch
+        if (finalOptions.timeoutMs) { try { delete finalOptions.timeoutMs; } catch (e) {} }
+
         // Append params to query string if provided
         if (options && options.params) {
             try {
@@ -801,9 +814,14 @@ class PDIApp {
             }
             return {};
         } catch (err) {
+            if (err && err.name === 'AbortError') {
+                throw new Error('Tempo excedido na requisição');
+            }
             // Network errors or JSON parse issues
             console.error('API request failed:', err);
             throw err;
+        } finally {
+            if (timeoutId) { try { clearTimeout(timeoutId); } catch (e) {} }
         }
     }
 

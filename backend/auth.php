@@ -1,9 +1,9 @@
 <?php
 // BYPASS_AUTH_CHECKS - Adicionado para resolver problemas de login
-define('BYPASS_AUTH_CHECKS', true);
+define('BYPASS_AUTH_CHECKS', false);
 
 // BYPASS_PASSWORD_VERIFICATION - Adicionado para resolver problemas de login
-define('BYPASS_PASSWORD_VERIFICATION', true);
+define('BYPASS_PASSWORD_VERIFICATION', false);
 
 
 /**
@@ -33,9 +33,7 @@ class Auth {
             $user = $this->db->selectOne($sql, [$email]);
             
             if ($user) {
-                $passwordValid = (defined('BYPASS_PASSWORD_VERIFICATION') && BYPASS_PASSWORD_VERIFICATION)
-                    ? (($password === $user['senha']) || password_verify($password, $user['senha']))
-                    : password_verify($password, $user['senha']);
+                $passwordValid = password_verify($password, $user['senha']);
 
                 if ($passwordValid) {
                     // Atualizar último login

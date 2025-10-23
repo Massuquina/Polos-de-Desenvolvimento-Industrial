@@ -1,6 +1,6 @@
 <?php
 // Incluir bypass de sessão e CSRF
-require_once 'session_bypass.php';
+// require_once 'session_bypass.php';
 /**
  * API principal para gestão de infraestruturas PDI Angola
  * Versão 1.2.0 - Melhorias de segurança e performance
@@ -12,7 +12,7 @@ error_reporting(E_ALL);
 require_once 'config.php';
 require_once 'database.php';
 require_once 'auth.php';
-require_once 'auth_bypass.php';
+// require_once 'auth_bypass.php';
 require_once 'CSRF.php';
 require_once 'RateLimiter.php';
 require_once 'Cache.php';
@@ -78,7 +78,7 @@ class API {
                 case '/csrf/token':
     // Endpoint para obter token CSRF
     header('Content-Type: application/json');
-    echo json_encode(['token' => generateValidCsrfToken()]);
+    echo json_encode(['token' => CSRF::generateToken()]);
     break;
 
 case 'admin':
