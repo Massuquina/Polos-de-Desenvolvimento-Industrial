@@ -29,10 +29,23 @@ class UserManager {
 
             // Validar dados obrigatórios
             $this->validateUserData($userData);
+            
+            // Sanitizar e normalizar o email
+            $email = filter_var(trim(strtolower($userData['email'])), FILTER_SANITIZE_EMAIL);
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception("Formato de email inválido");
+            }
+            $userData['email'] = $email;
 
-            // Verificar se email já existe
+            // Verificar se email já existe - com verificação mais robusta
             if ($this->emailExists($userData['email'])) {
-                throw new Exception("Email já está em uso");
+                // Retornar mensagem mais amigável e detalhada
+                return [
+                    'success' => false,
+                    'error' => "Email já está em uso. Por favor, use outro endereço de email.",
+                    'field' => 'email',
+                    'code' => 'duplicate_email'
+                ];
             }
 
             // Hash da senha
@@ -51,7 +64,7 @@ class UserManager {
             ]);
 
             // Log de auditoria
-            $this->logger->info("Utilizador criado", [
+            $this->logger->info("Utilizador criado com sucesso", [
                 'user_id' => $userId,
                 'email' => $userData['email'],
                 'nivel_acesso_id' => $userData['nivel_acesso_id'],

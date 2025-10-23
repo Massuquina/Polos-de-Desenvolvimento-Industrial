@@ -33,9 +33,24 @@ class SimpleLogger {
         $this->log('DEBUG', $message, $context);
     }
     
+    /**
+     * Registra uma mensagem de log com formato melhorado
+     */
     private function log($level, $message, $context = []) {
         $timestamp = date('Y-m-d H:i:s');
-        $contextStr = !empty($context) ? ' ' . json_encode($context) : '';
+        
+        // Adicionar informações do usuário ao contexto se disponível
+        if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['user'])) {
+            $context['user_id'] = $_SESSION['user']['id'] ?? 'unknown';
+            $context['user_email'] = $_SESSION['user']['email'] ?? 'unknown';
+        }
+        
+        // Adicionar informações do request
+        $context['ip'] = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $context['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+        $context['request_uri'] = $_SERVER['REQUEST_URI'] ?? 'unknown';
+        
+        $contextStr = !empty($context) ? ' ' . json_encode($context, JSON_UNESCAPED_UNICODE) : '';
         $logEntry = "[{$timestamp}] [{$level}] {$message}{$contextStr}" . PHP_EOL;
         
         // Escrever no arquivo de log
@@ -44,6 +59,11 @@ class SimpleLogger {
         // Também escrever no error_log do PHP se for ERROR
         if ($level === 'ERROR') {
             error_log("[SimpleLogger] {$message}");
+        }
+        
+        // Para erros críticos, enviar notificação (implementação futura)
+        if ($level === 'CRITICAL' || $level === 'EMERGENCY') {
+            // TODO: Implementar sistema de notificação para erros críticos
         }
     }
     

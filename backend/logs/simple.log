@@ -6,3 +6,5 @@
 [2025-10-21 17:04:55] [INFO] Teste do SimpleLogger
 [2025-10-21 18:05:03] [INFO] Backup da configuração criado: backups/config_2025-10-21_18-05-03.json
 [2025-10-21 18:14:10] [INFO] Utilizador criado {"user_id":"3","email":"teste@pdi.gov.ao","nivel_acesso_id":2,"created_by":1}
+[2025-10-22 16:28:47] [ERROR] Erro ao criar utilizador: Email já está em uso
+[2025-10-22 16:31:44] [ERROR] Erro ao criar utilizador: Email já está em uso
