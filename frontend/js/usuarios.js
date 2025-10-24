@@ -9,6 +9,9 @@ class UsuariosManager {
         this.currentUser = null;
         this.usuarios = [];
         this.niveisAcesso = [];
+        this.pagination = null;
+        this.currentPage = 1;
+        this.searchTerm = '';
         this.init();
     }
 
@@ -46,17 +49,32 @@ class UsuariosManager {
                this.currentUser.nivel_nome.toLowerCase() === 'administrador';
     }
 
-    async loadUsuarios() {
+    async loadUsuarios(page = 1, search = '') {
         try {
             this.showLoading(true);
             
-            const response = await fetch(`${this.apiBase}/admin/users`, {
+            // Construir URL com parâmetros de paginação e busca
+            const params = new URLSearchParams({
+                page: page,
+                limit: 20
+            });
+            
+            if (search.trim()) {
+                params.append('search', search.trim());
+            }
+            
+            const response = await fetch(`${this.apiBase}/admin/users?${params}`, {
                 credentials: 'include'
             });
 
             if (response.ok) {
-                this.usuarios = await response.json();
+                const data = await response.json();
+                this.usuarios = data.users;
+                this.pagination = data.pagination;
+                this.currentPage = page;
+                this.searchTerm = search;
                 this.renderUsuarios();
+                this.renderPagination();
             } else {
                 throw new Error('Erro ao carregar usuários');
             }
@@ -121,6 +139,59 @@ class UsuariosManager {
         `;
 
         container.innerHTML = table;
+    }
+
+    renderPagination() {
+        const paginationContainer = document.getElementById('paginationContainer');
+        if (!paginationContainer || !this.pagination) return;
+
+        const { current_page, total_pages, total_records, has_prev, has_next } = this.pagination;
+
+        if (total_pages <= 1) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        let paginationHTML = `
+            <div class="pagination-info">
+                <span>Mostrando ${this.usuarios.length} de ${total_records} usuários</span>
+            </div>
+            <div class="pagination-controls">
+        `;
+
+        // Botão anterior
+        if (has_prev) {
+            paginationHTML += `
+                <button class="btn btn-sm btn-outline-primary" onclick="usuariosManager.loadUsuarios(${current_page - 1}, '${this.searchTerm}')">
+                    <i class="fas fa-chevron-left"></i> Anterior
+                </button>
+            `;
+        }
+
+        // Números das páginas
+        const startPage = Math.max(1, current_page - 2);
+        const endPage = Math.min(total_pages, current_page + 2);
+
+        for (let i = startPage; i <= endPage; i++) {
+            const activeClass = i === current_page ? 'btn-primary' : 'btn-outline-primary';
+            paginationHTML += `
+                <button class="btn btn-sm ${activeClass}" onclick="usuariosManager.loadUsuarios(${i}, '${this.searchTerm}')">
+                    ${i}
+                </button>
+            `;
+        }
+
+        // Botão próximo
+        if (has_next) {
+            paginationHTML += `
+                <button class="btn btn-sm btn-outline-primary" onclick="usuariosManager.loadUsuarios(${current_page + 1}, '${this.searchTerm}')">
+                    Próximo <i class="fas fa-chevron-right"></i>
+                </button>
+            `;
+        }
+
+        paginationHTML += '</div>';
+        paginationContainer.innerHTML = paginationHTML;
     }
 
     renderUsuarioRow(usuario) {
@@ -230,7 +301,7 @@ class UsuariosManager {
             document.getElementById('createNivelAcesso'),
         ].filter(Boolean);
 
-        if (!this.accessLevels || !Array.isArray(this.accessLevels)) return;
+        if (!this.niveisAcesso || !Array.isArray(this.niveisAcesso)) return;
 
         selects.forEach(select => {
             // Limpa opções
@@ -241,7 +312,7 @@ class UsuariosManager {
             optDefault.textContent = 'Selecione um nível';
             select.appendChild(optDefault);
             // Popula
-            this.accessLevels.forEach(level => {
+            this.niveisAcesso.forEach(level => {
                 const opt = document.createElement('option');
                 opt.value = level.id;
                 opt.textContent = level.nome;
@@ -251,7 +322,7 @@ class UsuariosManager {
     }
 
     showCreateModal() {
-        if (!this.isAdmin) {
+        if (!this.isAdmin()) {
             this.showAccessDenied();
             return;
         }
@@ -261,8 +332,8 @@ class UsuariosManager {
         const form = document.getElementById('createUsuarioForm');
         if (form) form.reset();
         // Garantir níveis de acesso carregados
-        if (!this.accessLevels || !this.accessLevels.length) {
-            this.loadAccessLevels().then(() => this.populateAccessLevels());
+        if (!this.niveisAcesso || !this.niveisAcesso.length) {
+            this.loadNiveisAcesso().then(() => this.populateAccessLevels());
         } else {
             this.populateAccessLevels();
         }
@@ -276,7 +347,7 @@ class UsuariosManager {
 
     async saveNewUsuario(event) {
         event.preventDefault();
-        if (!this.isAdmin) {
+        if (!this.isAdmin()) {
             this.showAccessDenied();
             return;
         }
@@ -321,8 +392,7 @@ class UsuariosManager {
             // Sucesso
             this.showAlert('Usuário criado com sucesso.', 'success');
             this.closeCreateModal();
-            await this.loadUsuarios();
-            this.renderUsuariosTable();
+            await this.loadUsuarios(this.currentPage, this.searchTerm);
         } catch (error) {
             console.error('Erro ao criar usuário:', error);
             this.showAlert(error.message || 'Erro ao criar usuário.', 'error');
@@ -332,18 +402,39 @@ class UsuariosManager {
     }
 
     setupEventListeners() {
+        // Campo de busca
+        const searchInput = document.getElementById('searchUsuarios');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.loadUsuarios(1, e.target.value);
+                }, 500); // Debounce de 500ms
+            });
+        }
+
+        // Botão de limpar busca
+        const clearSearchBtn = document.getElementById('clearSearch');
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', () => {
+                const searchInput = document.getElementById('searchUsuarios');
+                if (searchInput) {
+                    searchInput.value = '';
+                    this.loadUsuarios(1, '');
+                }
+            });
+        }
+
         // Botão de atualizar
         const refreshBtn = document.getElementById('refreshUsuarios');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', async () => {
-                if (!this.isAdmin) {
+                if (!this.isAdmin()) {
                     this.showAccessDenied();
                     return;
                 }
-                this.showLoading(true);
-                await this.loadUsuarios();
-                this.renderUsuariosTable();
-                this.showLoading(false);
+                this.loadUsuarios(this.currentPage, this.searchTerm);
             });
         }
 
@@ -456,6 +547,23 @@ class UsuariosManager {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+    
+    async getCsrfToken() {
+        try {
+            const response = await fetch(`${this.apiBase}/csrf/token`, {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                return data.token;
+            }
+            return null;
+        } catch (error) {
+            console.error('Erro ao obter token CSRF:', error);
+            return null;
+        }
     }
 }
 

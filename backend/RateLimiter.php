@@ -26,6 +26,14 @@ class RateLimiter {
         }
 
         $ip = $ip ?: $this->getClientIP();
+        
+        // IPs locais têm limite mais permissivo
+        if ($this->isLocalIP($ip)) {
+            $maxRequests = $this->maxRequests * 10; // 10x mais permissivo para IPs locais
+        } else {
+            $maxRequests = $this->maxRequests;
+        }
+        
         $currentTime = time();
         $windowStart = $currentTime - $this->windowSeconds;
 
@@ -37,12 +45,15 @@ class RateLimiter {
             $this->cleanOldRecords($windowStart);
 
             // Contar requisições no período
-            $count = $this->db->selectOne(
+            $result = $this->db->selectOne(
                 "SELECT COUNT(*) as count FROM rate_limits WHERE ip_address = ? AND request_time > ?",
                 [$ip, $windowStart]
-            )['count'];
+            );
+            
+            $count = $result ? (int)$result['count'] : 0;
 
-            if ($count >= $this->maxRequests) {
+            if ($count >= $maxRequests) {
+                error_log("Rate limit exceeded for IP: $ip ($count/$maxRequests requests)");
                 return false;
             }
 
@@ -52,8 +63,9 @@ class RateLimiter {
             return true;
 
         } catch (Exception $e) {
-            // Em caso de erro, permitir a requisição
+            // Em caso de erro, permitir a requisição mas registrar o erro
             error_log("Rate limiter error: " . $e->getMessage());
+            error_log("Rate limiter stack trace: " . $e->getTraceAsString());
             return true;
         }
     }
@@ -71,13 +83,28 @@ class RateLimiter {
                 if (strpos($ip, ',') !== false) {
                     $ip = trim(explode(',', $ip)[0]);
                 }
-                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                if (filter_var($ip, FILTER_VALIDATE_IP)) {
                     return $ip;
                 }
             }
         }
 
         return $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    }
+
+    /**
+     * Verifica se o IP é local/privado
+     */
+    private function isLocalIP($ip) {
+        // IPs locais comuns
+        $localIPs = ['127.0.0.1', '::1', 'localhost'];
+        
+        if (in_array($ip, $localIPs)) {
+            return true;
+        }
+        
+        // Verificar se é IP privado
+        return !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
     }
 
     /**

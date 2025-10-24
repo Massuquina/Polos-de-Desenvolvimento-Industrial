@@ -172,22 +172,52 @@ class UserManager {
     }
 
     /**
-     * Lista todos os utilizadores
+     * Lista todos os utilizadores com paginação e busca
      */
-    public function getUsers($adminUserId) {
+    public function getUsers($adminUserId, $options = []) {
         try {
             // Verificar se o admin tem permissão
             if (!$this->isAdmin($adminUserId)) {
                 throw new Exception("Apenas administradores podem listar utilizadores");
             }
 
-            $sql = "SELECT u.id, u.nome, u.email, u.ativo, u.ultimo_login, u.created_at, u.updated_at,
-                           na.nome as nivel_nome, na.permissoes
-                    FROM usuarios u 
-                    JOIN niveis_acesso na ON u.nivel_acesso_id = na.id 
-                    ORDER BY u.created_at DESC";
+            // Parâmetros de paginação
+            $page = isset($options['page']) ? max(1, intval($options['page'])) : 1;
+            $limit = isset($options['limit']) ? max(1, min(100, intval($options['limit']))) : 20;
+            $offset = ($page - 1) * $limit;
 
-            $users = $this->db->select($sql);
+            // Parâmetros de busca
+            $search = isset($options['search']) ? trim($options['search']) : '';
+
+            // Construir query base
+            $baseQuery = "FROM usuarios u 
+                         JOIN niveis_acesso na ON u.nivel_acesso_id = na.id";
+            
+            $whereClause = "";
+            $params = [];
+
+            // Adicionar filtro de busca se fornecido
+            if (!empty($search)) {
+                $whereClause = " WHERE (u.nome LIKE ? OR u.email LIKE ?)";
+                $searchParam = '%' . $search . '%';
+                $params = [$searchParam, $searchParam];
+            }
+
+            // Query para contar total de registros
+            $countSql = "SELECT COUNT(*) as total " . $baseQuery . $whereClause;
+            $totalResult = $this->db->selectOne($countSql, $params);
+            $total = $totalResult ? intval($totalResult['total']) : 0;
+
+            // Query para buscar os dados
+            $sql = "SELECT u.id, u.nome, u.email, u.ativo, u.ultimo_login, u.created_at, u.updated_at,
+                           na.nome as nivel_nome, na.permissoes " . 
+                   $baseQuery . $whereClause . 
+                   " ORDER BY u.created_at DESC LIMIT ? OFFSET ?";
+
+            $params[] = $limit;
+            $params[] = $offset;
+
+            $users = $this->db->select($sql, $params);
 
             // Remover senhas dos dados
             foreach ($users as &$user) {
@@ -195,9 +225,21 @@ class UserManager {
                 $user['permissoes'] = json_decode($user['permissoes'], true);
             }
 
+            // Calcular informações de paginação
+            $totalPages = ceil($total / $limit);
+
             return [
                 'success' => true,
-                'users' => $users
+                'users' => $users,
+                'pagination' => [
+                    'current_page' => $page,
+                    'total_pages' => $totalPages,
+                    'total_records' => $total,
+                    'per_page' => $limit,
+                    'has_next' => $page < $totalPages,
+                    'has_prev' => $page > 1
+                ],
+                'search' => $search
             ];
 
         } catch (Exception $e) {

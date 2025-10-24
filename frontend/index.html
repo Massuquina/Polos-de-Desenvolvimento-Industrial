@@ -467,14 +467,24 @@
 
                 <!-- Controls -->
                 <div class="controls-bar">
-                    <button class="btn btn-primary" id="refreshUsuarios">
-                        <i class="fas fa-sync-alt"></i>
-                        Atualizar Lista
-                    </button>
-                    <button class="btn btn-success" id="newUsuarioBtn">
-                        <i class="fas fa-user-plus"></i>
-                        Novo Usuário
-                    </button>
+                    <div class="search-controls">
+                        <div class="search-input-group">
+                            <input type="text" id="searchUsuarios" placeholder="Buscar por nome ou email..." class="form-control">
+                            <button class="btn btn-outline-secondary" id="clearSearch" title="Limpar busca">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="action-controls">
+                        <button class="btn btn-primary" id="refreshUsuarios">
+                            <i class="fas fa-sync-alt"></i>
+                            Atualizar Lista
+                        </button>
+                        <button class="btn btn-success" id="newUsuarioBtn">
+                            <i class="fas fa-user-plus"></i>
+                            Novo Usuário
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Loading -->
@@ -486,6 +496,11 @@
                 <!-- Table Container -->
                 <div id="usuariosTableContainer" class="table-container" style="display: none;">
                     <!-- Tabela será gerada via JavaScript -->
+                </div>
+
+                <!-- Pagination Container -->
+                <div id="paginationContainer" class="pagination-container">
+                    <!-- Paginação será gerada via JavaScript -->
                 </div>
             </div>
         </section>

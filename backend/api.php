@@ -1109,13 +1109,24 @@ case 'admin':
     }
 
     /**
-     * Lista todos os utilizadores
+     * Lista todos os utilizadores com paginação e busca
      */
     private function getAllUsers($adminUserId) {
-        $result = $this->userManager->getUsers($adminUserId);
+        // Obter parâmetros de query string
+        $options = [
+            'page' => isset($_GET['page']) ? intval($_GET['page']) : 1,
+            'limit' => isset($_GET['limit']) ? intval($_GET['limit']) : 20,
+            'search' => isset($_GET['search']) ? trim($_GET['search']) : ''
+        ];
+
+        $result = $this->userManager->getUsers($adminUserId, $options);
         
         if ($result['success']) {
-            return $this->sendResponse($result['users']);
+            return $this->sendResponse([
+                'users' => $result['users'],
+                'pagination' => $result['pagination'],
+                'search' => $result['search']
+            ]);
         } else {
             return $this->sendResponse(['error' => $result['error']], 400);
         }
