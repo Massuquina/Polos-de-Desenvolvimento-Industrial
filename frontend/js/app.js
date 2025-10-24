@@ -425,6 +425,11 @@ class PDIApp {
         this.showLoading();
 
         try {
+            // Garantir que o token CSRF está atualizado antes de fazer login
+            if (window.refreshCsrfToken && typeof window.refreshCsrfToken === 'function') {
+                try { await window.refreshCsrfToken(); } catch (e) { /* ignore */ }
+            }
+
             const response = await this.apiRequest('auth/login', {
                 method: 'POST',
                 body: JSON.stringify({ email, password })
@@ -469,6 +474,11 @@ class PDIApp {
         } catch (error) {
             console.error('Erro no logout:', error);
         } finally {
+            // Atualizar o token CSRF após destruir a sessão
+            if (window.refreshCsrfToken && typeof window.refreshCsrfToken === 'function') {
+                try { await window.refreshCsrfToken(); } catch (e) { /* ignore */ }
+            }
+
             this.currentUser = null;
             this.showLoginModal();
         }

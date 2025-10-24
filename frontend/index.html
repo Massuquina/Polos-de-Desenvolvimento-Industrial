@@ -6,6 +6,7 @@
     <title>PDI Angola - Gestão de Infraestruturas</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/improvements.css">
+    <link rel="stylesheet" href="css/usuarios.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -32,6 +33,7 @@
                         <li><a href="#polos" class="nav-link">Polos</a></li>
                         <li><a href="#mapa" class="nav-link">Mapa</a></li>
                         <li><a href="#relatorios" class="nav-link">Relatórios</a></li>
+                        <li><a href="#usuarios" class="nav-link admin-only" style="display: none;">Usuários</a></li>
                     </ul>
                 </nav>
                 <div class="header-actions">
@@ -451,6 +453,97 @@
                 </div>
             </div>
         </section>
+
+        <!-- Usuários Section (Admin Only) -->
+        <section id="usuarios" class="section admin-only" style="display: none;">
+            <div class="container">
+                <div class="section-header">
+                    <h2><i class="fas fa-users"></i> Gestão de Usuários</h2>
+                    <p>Visualizar e gerenciar usuários do sistema (apenas administradores)</p>
+                </div>
+
+                <!-- Alerts Container -->
+                <div id="usuariosAlerts"></div>
+
+                <!-- Controls -->
+                <div class="controls-bar">
+                    <button class="btn btn-primary" id="refreshUsuarios">
+                        <i class="fas fa-sync-alt"></i>
+                        Atualizar Lista
+                    </button>
+                    <button class="btn btn-success" id="newUsuarioBtn">
+                        <i class="fas fa-user-plus"></i>
+                        Novo Usuário
+                    </button>
+                </div>
+
+                <!-- Loading -->
+                <div id="usuariosLoader" class="loading-container">
+                    <div class="spinner"></div>
+                    <p>Carregando usuários...</p>
+                </div>
+
+                <!-- Table Container -->
+                <div id="usuariosTableContainer" class="table-container" style="display: none;">
+                    <!-- Tabela será gerada via JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Modal de Edição de Usuário -->
+        <div id="editUsuarioModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-user-edit"></i> Editar Usuário</h3>
+                    <button class="modal-close" id="closeEditModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="editUsuarioForm" class="form">
+                    <input type="hidden" id="editUserId" name="id">
+                    
+                    <div class="form-group">
+                        <label for="editNome">Nome</label>
+                        <input type="text" id="editNome" name="nome" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editEmail">Email</label>
+                        <input type="email" id="editEmail" name="email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editSenha">Nova Senha (deixe em branco para manter atual)</label>
+                        <input type="password" id="editSenha" name="senha" minlength="6">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editNivelAcesso">Nível de Acesso</label>
+                        <select id="editNivelAcesso" name="nivel_acesso_id" required>
+                            <option value="">Selecione um nível</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editAtivo">Status</label>
+                        <select id="editAtivo" name="ativo" required>
+                            <option value="1">Ativo</option>
+                            <option value="0">Inativo</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="usuariosManager.closeEditModal()">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </main>
 
     <!-- Footer -->
@@ -507,6 +600,61 @@
     <script src="js/lotes.js"></script>
     <script src="js/empresas.js"></script>
     <script src="js/mapa.js"></script>
+    <script src="js/usuarios.js"></script>
 </body>
 </html>
+
+
+<!-- Modal de Criação de Usuário -->
+<div id="createUsuarioModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-plus"></i> Novo Usuário</h3>
+            <button class="modal-close" id="closeCreateModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="createUsuarioForm" class="form">
+            <div class="form-group">
+                <label for="createNome">Nome</label>
+                <input type="text" id="createNome" name="nome" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="createEmail">Email</label>
+                <input type="email" id="createEmail" name="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="createSenha">Senha</label>
+                <input type="password" id="createSenha" name="senha" required minlength="6">
+            </div>
+            
+            <div class="form-group">
+                <label for="createNivelAcesso">Nível de Acesso</label>
+                <select id="createNivelAcesso" name="nivel_acesso_id" required>
+                    <option value="">Selecione um nível</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="createAtivo">Status</label>
+                <select id="createAtivo" name="ativo" required>
+                    <option value="1">Ativo</option>
+                    <option value="0">Inativo</option>
+                </select>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="usuariosManager.closeCreateModal()">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Criar Usuário
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 

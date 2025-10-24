@@ -159,6 +159,9 @@ class AuthManager {
                 userMenu.style.display = 'none';
             }
         }
+
+        // Atualizar visibilidade dos elementos admin-only
+        this.updateAdminElements();
     }
 
     /**
@@ -193,6 +196,31 @@ class AuthManager {
             default:
                 return false;
         }
+    }
+
+    /**
+     * Verifica se o usuário é administrador
+     */
+    isAdmin() {
+        return this.currentUser && 
+               this.currentUser.nivel_nome && 
+               this.currentUser.nivel_nome.toLowerCase() === 'administrador';
+    }
+
+    /**
+     * Atualiza a visibilidade dos elementos admin-only
+     */
+    updateAdminElements() {
+        const adminElements = document.querySelectorAll('.admin-only');
+        const isAdmin = this.isAdmin();
+        
+        adminElements.forEach(element => {
+            if (isAdmin) {
+                element.style.display = '';
+            } else {
+                element.style.display = 'none';
+            }
+        });
     }
 }
 

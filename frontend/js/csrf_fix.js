@@ -60,6 +60,19 @@
         console.log('CSRF token injetado em todas as requisições');
     });
     
+    // Expor função global para renovar o token CSRF
+    window.refreshCsrfToken = async function() {
+        try {
+            const newToken = await getCsrfToken();
+            window.csrfToken = newToken;
+            console.log('CSRF token atualizado');
+            return newToken;
+        } catch (error) {
+            console.error('Erro ao atualizar CSRF token:', error);
+            return window.csrfToken;
+        }
+    };
+    
     // Adicionar o script à página
     document.addEventListener('DOMContentLoaded', function() {
         console.log('CSRF fix carregado');
