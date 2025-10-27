@@ -7,8 +7,24 @@ class DashboardManager {
     constructor(app) {
         this.app = app;
         this.charts = {};
+        // Armazenamento para aplicação de filtros
+        this.rawInfraData = [];
+        this.rawEmpresaData = [];
+        this.rawSectoresData = [];
         
         this.init();
+    }
+
+    /**
+     * Normaliza strings para comparação consistente (case/acentos/espacos)
+     */
+    _normalize(str) {
+        if (str == null) return '';
+        return String(str)
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
     }
 
     /**
@@ -16,6 +32,8 @@ class DashboardManager {
      */
     init() {
         // Os gráficos serão inicializados quando os dados estiverem disponíveis
+        // Inicializa eventos do painel de filtros
+        this.attachFilterEvents();
     }
 
     /**
@@ -27,21 +45,54 @@ class DashboardManager {
         const empresaData = empresas?.data || empresas || [];
         const sectoresData = sectores?.data || sectores || [];
 
+        // Armazenar dados brutos
+        this.rawInfraData = infraData;
+        this.rawEmpresaData = empresaData;
+        this.rawSectoresData = sectoresData;
+
+        // Popular opções dos filtros (quando vazias)
+        this.populateFilterOptions(infraData, empresaData, sectoresData);
+
+        // Inicializar selects dinâmicos do dashboard (uma única vez)
+        this.initDashboardSelects();
+
+        // Ajustar opções dependentes com base nas seleções atuais
+        this.updateFilterDependencies();
+
         if (!infraData || infraData.length === 0) {
             console.warn('Nenhuma infraestrutura encontrada para gráficos');
-            // Mesmo sem dados, vamos criar gráficos vazios para mostrar a estrutura
             this.createEmptyCharts();
             return;
         }
 
-        this.createProvinciaChart(infraData);
-        this.createEstadoChart(infraData);
-        this.createSectorChart(infraData, sectoresData);
+        // Aplicar filtros
+        const { filteredInfra, filteredEmpresas, hasActiveFilters } = this.applyCurrentFilters(infraData, empresaData);
+
+        this.createProvinciaChart(filteredInfra);
+        this.createEstadoChart(filteredInfra);
+        // Se houver filtros ativos, usar dados filtrados para setores
+        this.createSectorChart(filteredInfra, hasActiveFilters ? [] : sectoresData);
         
-        if (empresaData && empresaData.length > 0) {
-            this.createEmpresasPoloChart(empresaData);
+        if (filteredEmpresas && filteredEmpresas.length > 0) {
+            this.createEmpresasPoloChart(filteredEmpresas);
         } else {
             this.createEmptyEmpresasChart();
+        }
+    }
+
+    /**
+     * Inicializa os selects dinâmicos do dashboard com temas
+     */
+    initDashboardSelects() {
+        if (this.dynamicSelectsInitialized) return;
+        if (typeof window.initDashboardDynamicSelects === 'function') {
+            window.initDashboardDynamicSelects({
+                provincias: 'default',
+                polos: 'avatar',
+                sectores: 'default',
+                estados: 'checkbox'
+            });
+            this.dynamicSelectsInitialized = true;
         }
     }
 
@@ -773,6 +824,280 @@ class DashboardManager {
             this.app.hideLoading();
         }
     }
+
+    // --- Métodos de filtros ---
+    attachFilterEvents() {
+        const applyBtn = document.getElementById('applyDashboardFilters');
+        const clearBtn = document.getElementById('clearDashboardFilters');
+        
+        // Botão de aplicar filtros
+        if (applyBtn) {
+            applyBtn.addEventListener('click', () => {
+                this._scheduleChartsUpdate();
+                this.app.showNotification("Filtros aplicados com sucesso", "success");
+            });
+        }
+        
+        // Botão de limpar filtros
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                this.clearDashboardFilters();
+                this.app.showNotification("Filtros removidos", "info");
+            });
+        }
+
+        // Quando um filtro muda, apenas atualiza as dependências entre filtros
+        // mas não aplica automaticamente (aguarda clique no botão Aplicar)
+        const filterIds = ['dashFilterProvincias','dashFilterPolos','dashFilterSectores','dashFilterEstados'];
+        filterIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', () => {
+                    // Atualiza dependências entre filtros
+                    if (this.isClearingFilters) return;
+                    this._scheduleChartsUpdate();
+                });
+            }
+        });
+    }
+
+    /**
+     * Debounce para atualização de gráficos e dependências de filtros
+     */
+    _scheduleChartsUpdate() {
+        clearTimeout(this._updateTimer);
+        this._updateTimer = setTimeout(() => {
+            this.updateCharts(this.rawInfraData, this.rawEmpresaData, this.rawSectoresData);
+        }, 120);
+    }
+
+    /**
+     * Atualiza as opções de cada filtro com base nas seleções atuais (cascata inteligente)
+     * - Para cada filtro, calcula valores possíveis aplicando os demais filtros
+     */
+    updateFilterDependencies() {
+        const getSel = (id) => Array.from(document.getElementById(id)?.selectedOptions || []).map(o => o.value);
+        const sel = {
+            provincias: getSel('dashFilterProvincias'),
+            polos: getSel('dashFilterPolos'),
+            sectores: getSel('dashFilterSectores'),
+            estados: getSel('dashFilterEstados')
+        };
+
+        // Função para filtrar infra aplicando todos, exceto um
+        const filterInfra = (excludeKey) => {
+            return (this.rawInfraData || []).filter(i => {
+                const checks = {
+                    provincias: sel.provincias.length === 0 || sel.provincias.includes(i.provincia_nome),
+                    polos: sel.polos.length === 0 || sel.polos.includes(i.polo_nome),
+                    sectores: sel.sectores.length === 0 || sel.sectores.includes(i.sector_nome),
+                    estados: sel.estados.length === 0 || sel.estados.includes(i.estado_atual)
+                };
+                if (excludeKey) delete checks[excludeKey];
+                return Object.values(checks).every(Boolean);
+            });
+        };
+
+        // Provincias possíveis considerando (polos, sectores, estados)
+        const infraExceptProv = filterInfra('provincias');
+        const provinciasSet = Array.from(new Set(infraExceptProv.map(i => i.provincia_nome).filter(Boolean))).sort();
+        this.setSelectOptions('dashFilterProvincias', provinciasSet);
+
+        // Polos possíveis considerando (provincias, sectores, estados)
+        const infraExceptPolos = filterInfra('polos');
+        const polosInfra = infraExceptPolos.map(i => i.polo_nome).filter(Boolean);
+        const empFiltered = (this.rawEmpresaData || []).filter(e => {
+            const checks = {
+                provincias: sel.provincias.length === 0 || sel.provincias.includes(e.provincia_nome || e.provincia),
+                sectores: sel.sectores.length === 0 || sel.sectores.includes(e.sector_nome || e.sector)
+            };
+            // polos excluído
+            return Object.values(checks).every(Boolean);
+        }).map(e => e.polo_nome).filter(Boolean);
+        const polosSet = Array.from(new Set([ ...polosInfra, ...empFiltered ])).sort();
+        this.setSelectOptions('dashFilterPolos', polosSet);
+
+        // Sectores possíveis considerando (provincias, polos, estados)
+        const infraExceptSect = filterInfra('sectores');
+        const sectoresSet = Array.from(new Set(infraExceptSect.map(i => i.sector_nome).filter(Boolean))).sort();
+        this.setSelectOptions('dashFilterSectores', sectoresSet);
+
+        // Estados possíveis considerando (provincias, polos, sectores)
+        const infraExceptEstado = filterInfra('estados');
+        const estadosRaw = infraExceptEstado.map(i => i.estado_atual).filter(Boolean);
+        // Deduplicar por estado normalizado (evita duplicados por case/acentos)
+        const estadosMap = new Map();
+        estadosRaw.forEach(v => {
+            const key = this._normalize(v);
+            if (!estadosMap.has(key)) estadosMap.set(key, v);
+        });
+        const estadosSet = Array.from(estadosMap.values()).sort();
+        this.setSelectOptions('dashFilterEstados', estadosSet);
+    }
+
+    /**
+     * Helper: define opções de um select e atualiza UI do DynamicSelect (preserva seleção válida)
+     */
+    setSelectOptions(selectId, values) {
+        const selEl = document.getElementById(selectId);
+        if (!selEl) return;
+
+        // Construir pares {value,text}
+        const opts = values.map(v => ({ value: v, text: v }));
+
+        // Preservar seleção existente que ainda exista
+        const prevSelected = Array.from(selEl.selectedOptions || []).map(o => o.value);
+        while (selEl.options.length) selEl.remove(0);
+        opts.forEach(({ value, text }) => {
+            const opt = document.createElement('option');
+            opt.value = value;
+            opt.textContent = text;
+            opt.selected = prevSelected.includes(value);
+            selEl.appendChild(opt);
+        });
+
+        // Atualizar DynamicSelect, se existir
+        if (window.__dashboardDynamicSelects && window.__dashboardDynamicSelects[selectId]) {
+            window.__dashboardDynamicSelects[selectId].setOptions(opts);
+        }
+    }
+
+    populateFilterOptions(infraData, empresaData, sectoresData) {
+        const provSel = document.getElementById('dashFilterProvincias');
+        if (provSel && provSel.options.length === 0) {
+            const provincias = Array.from(new Set(infraData.map(i => i.provincia_nome).filter(Boolean))).sort();
+            provincias.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                provSel.appendChild(opt);
+            });
+        }
+        const polosSel = document.getElementById('dashFilterPolos');
+        if (polosSel && polosSel.options.length === 0) {
+            const polosInfra = infraData.map(i => i.polo_nome).filter(Boolean);
+            const polosEmp = empresaData.map(e => e.polo_nome).filter(Boolean);
+            const polos = Array.from(new Set([...polosInfra, ...polosEmp])).sort();
+            polos.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                polosSel.appendChild(opt);
+            });
+        }
+        const sectSel = document.getElementById('dashFilterSectores');
+        if (sectSel && sectSel.options.length === 0) {
+            const sectoresApi = (sectoresData || []).map(s => s.nome || s.sector_nome).filter(Boolean);
+            const sectoresInfra = infraData.map(i => i.sector_nome).filter(Boolean);
+            const sectores = Array.from(new Set([...sectoresApi, ...sectoresInfra])).sort();
+            sectores.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                sectSel.appendChild(opt);
+            });
+        }
+    }
+
+    getSelectedValues(selectId) {
+        const sel = document.getElementById(selectId);
+        if (!sel) return [];
+        return Array.from(sel.selectedOptions || []).map(o => o.value);
+    }
+    
+    getFilterValues() {
+        const filters = {
+            provincias: Array.from(document.getElementById('dashFilterProvincias')?.selectedOptions || []).map(o => o.value),
+            polos: Array.from(document.getElementById('dashFilterPolos')?.selectedOptions || []).map(o => o.value),
+            sectores: Array.from(document.getElementById('dashFilterSectores')?.selectedOptions || []).map(o => o.value),
+            estados: Array.from(document.getElementById('dashFilterEstados')?.selectedOptions || []).map(o => o.value),
+            combiner: 'OR' // Definido como OR por padrão após remoção do operador
+        };
+        return filters;
+    }
+
+    clearDashboardFilters() {
+        this.isClearingFilters = true;
+        ['dashFilterProvincias','dashFilterPolos','dashFilterSectores','dashFilterEstados'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (sel) {
+                // Limpar seleção do <select>
+                Array.from(sel.options).forEach(opt => (opt.selected = false));
+
+                // Sincronizar UI do DynamicSelect, se estiver inicializado
+                if (window.__dashboardDynamicSelects && window.__dashboardDynamicSelects[id]) {
+                    const ds = window.__dashboardDynamicSelects[id];
+                    ds.selectedItems = [];
+                    ds._updateSelectedDisplay();
+                    ds._renderOptions();
+                }
+            }
+        });
+        const andRadio = document.getElementById('dashCombineAnd');
+        if (andRadio) andRadio.checked = true;
+        // Atualizar dependências e gráficos uma única vez
+        this.isClearingFilters = false;
+        this.updateFilterDependencies();
+        this.updateCharts(this.rawInfraData, this.rawEmpresaData, this.rawSectoresData);
+    }
+
+    applyCurrentFilters(infraData, empresaData) {
+        const provincias = this.getSelectedValues('dashFilterProvincias');
+        const polos = this.getSelectedValues('dashFilterPolos');
+        const sectores = this.getSelectedValues('dashFilterSectores');
+        const estados = this.getSelectedValues('dashFilterEstados');
+        
+        // Remover referência ao radio button que foi removido
+        const combineOr = false; // Sempre usar AND como padrão
+
+        // Cache de estados normalizados para melhor performance
+        const estadosNorm = estados.map(e => this._normalize(e));
+        
+        // Verificar se há filtros ativos
+        const hasActiveFilters = provincias.length > 0 || polos.length > 0 || sectores.length > 0 || estados.length > 0;
+        
+        // Se não houver filtros ativos, retornar todos os dados
+        if (!hasActiveFilters) {
+            return {
+                filteredInfra: infraData,
+                filteredEmpresas: empresaData,
+                hasActiveFilters: false
+            };
+        }
+
+        // Aplicar filtros com melhor performance
+        const filteredInfra = infraData.filter(infra => {
+            const provMatch = provincias.length === 0 || provincias.includes(infra.provincia_nome);
+            const poloMatch = polos.length === 0 || polos.includes(infra.polo_nome);
+            const sectMatch = sectores.length === 0 || sectores.includes(infra.sector_nome);
+            const estadoMatch = estados.length === 0 || estadosNorm.includes(this._normalize(infra.estado_atual));
+            if (combineOr) {
+                return (
+                    (provincias.length && provMatch) ||
+                    (polos.length && poloMatch) ||
+                    (sectores.length && sectMatch) ||
+                    (estados.length && estadoMatch)
+                );
+            }
+            return provMatch && poloMatch && sectMatch && estadoMatch;
+        });
+
+        const filteredEmpresas = (empresaData || []).filter(emp => {
+            const poloMatch = polos.length === 0 || polos.includes(emp.polo_nome);
+            const sectMatch = sectores.length === 0 || sectores.includes(emp.sector_nome || emp.sector);
+            const provMatch = provincias.length === 0 || provincias.includes(emp.provincia_nome || emp.provincia);
+            if (combineOr) {
+                return (
+                    (polos.length && poloMatch) ||
+                    (sectores.length && sectMatch) ||
+                    (provincias.length && provMatch)
+                );
+            }
+            return poloMatch && sectMatch && provMatch;
+        });
+
+        return { filteredInfra, filteredEmpresas, hasActiveFilters };
+    }
 }
 
 // Inicializar quando a aplicação estiver pronta
@@ -782,9 +1107,9 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // Adicionar método updateCharts ao app principal
         const originalUpdateCharts = window.pdiApp.updateCharts;
-        window.pdiApp.updateCharts = function(infraestruturas) {
+        window.pdiApp.updateCharts = function(infraestruturas, empresas, sectores) {
             if (window.dashboardManager) {
-                window.dashboardManager.updateCharts(infraestruturas);
+                window.dashboardManager.updateCharts(infraestruturas, empresas, sectores);
             }
         };
 

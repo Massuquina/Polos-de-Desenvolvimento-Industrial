@@ -7,12 +7,27 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/improvements.css">
     <link rel="stylesheet" href="css/usuarios.css">
+    <link rel="stylesheet" href="css/dynamic-select.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="js/csrf_fix.js"></script>
 </head>
 <body>
+    <!-- Script para corrigir o modal -->
+    <script>
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                const newUsuarioBtn = document.getElementById('newUsuarioBtn');
+                if (newUsuarioBtn) {
+                    newUsuarioBtn.addEventListener('click', function() {
+                        const modal = document.getElementById('createUsuarioModal');
+                        if (modal) modal.style.display = 'flex';
+                    });
+                }
+            }, 1000);
+        });
+    </script>
     <!-- Header -->
     <header class="header">
         <div class="container">
@@ -91,6 +106,53 @@
                 <div class="section-header">
                     <h2>Dashboard</h2>
                     <p>Visão geral das infraestruturas nos Polos de Desenvolvimento Industrial</p>
+                </div>
+
+                <!-- Filtros do Dashboard (Refatorado) -->
+                <div class="filters dashboard-filters">
+                    <div class="filter-header">
+                        <h3><i class="fas fa-filter"></i> Filtros</h3>
+                        <div class="filter-actions">
+                            <button class="btn btn-primary" id="applyDashboardFilters"><i class="fas fa-check"></i> Aplicar</button>
+                            <button class="btn btn-secondary" id="clearDashboardFilters"><i class="fas fa-times"></i> Limpar</button>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-container">
+                        <div class="filter-group">
+                            <label for="dashFilterProvincias">
+                                <i class="fas fa-map-marker-alt"></i> Províncias
+                            </label>
+                            <select id="dashFilterProvincias" multiple data-placeholder="Selecione as províncias"></select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="dashFilterPolos">
+                                <i class="fas fa-industry"></i> Polos
+                            </label>
+                            <select id="dashFilterPolos" multiple data-placeholder="Selecione os polos"></select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="dashFilterSectores">
+                                <i class="fas fa-tags"></i> Sectores
+                            </label>
+                            <select id="dashFilterSectores" multiple data-placeholder="Selecione os sectores"></select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="dashFilterEstados">
+                                <i class="fas fa-clipboard-check"></i> Estado das Infraestruturas
+                            </label>
+                            <select id="dashFilterEstados" multiple data-placeholder="Selecione os estados">
+                                <option value="excelente">Excelente</option>
+                                <option value="bom">Bom</option>
+                                <option value="regular">Regular</option>
+                                <option value="mau">Mau</option>
+                                <option value="ruina">Ruína</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Stats Cards -->
@@ -594,6 +656,59 @@
         <div class="spinner"></div>
     </div>
 
+    <!-- Modal de Criação de Usuário -->
+    <div id="createUsuarioModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Novo Usuário</h3>
+                <button class="modal-close" id="closeCreateModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="createUsuarioForm" class="form">
+                <div class="form-group">
+                    <label for="createNome">Nome</label>
+                    <input type="text" id="createNome" name="nome" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="createEmail">Email</label>
+                    <input type="email" id="createEmail" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="createSenha">Senha</label>
+                    <input type="password" id="createSenha" name="senha" required minlength="6">
+                </div>
+                
+                <div class="form-group">
+                    <label for="createNivelAcesso">Nível de Acesso</label>
+                    <select id="createNivelAcesso" name="nivel_acesso_id" required>
+                        <option value="">Selecione um nível</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="createAtivo">Status</label>
+                    <select id="createAtivo" name="ativo" required>
+                        <option value="1">Ativo</option>
+                        <option value="0">Inativo</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="usuariosManager.closeCreateModal()">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Criar Usuário
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -606,6 +721,7 @@
     <script src="js/utils.js"></script>
     <script src="js/form-validator.js"></script>
     <script src="js/ui-components.js"></script>
+    <script src="js/dynamic-select.js"></script>
     
     <!-- Scripts originais -->
     <script src="js/app.js"></script>
@@ -618,58 +734,4 @@
     <script src="js/usuarios.js"></script>
 </body>
 </html>
-
-
-<!-- Modal de Criação de Usuário -->
-<div id="createUsuarioModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3><i class="fas fa-user-plus"></i> Novo Usuário</h3>
-            <button class="modal-close" id="closeCreateModal">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <form id="createUsuarioForm" class="form">
-            <div class="form-group">
-                <label for="createNome">Nome</label>
-                <input type="text" id="createNome" name="nome" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="createEmail">Email</label>
-                <input type="email" id="createEmail" name="email" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="createSenha">Senha</label>
-                <input type="password" id="createSenha" name="senha" required minlength="6">
-            </div>
-            
-            <div class="form-group">
-                <label for="createNivelAcesso">Nível de Acesso</label>
-                <select id="createNivelAcesso" name="nivel_acesso_id" required>
-                    <option value="">Selecione um nível</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label for="createAtivo">Status</label>
-                <select id="createAtivo" name="ativo" required>
-                    <option value="1">Ativo</option>
-                    <option value="0">Inativo</option>
-                </select>
-            </div>
-            
-            <div class="form-actions">
-                <button type="button" class="btn btn-secondary" onclick="usuariosManager.closeCreateModal()">
-                    Cancelar
-                </button>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i>
-                    Criar Usuário
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
 

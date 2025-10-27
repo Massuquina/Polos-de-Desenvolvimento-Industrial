@@ -327,7 +327,11 @@ class UsuariosManager {
             return;
         }
         const modal = document.getElementById('createUsuarioModal');
-        if (!modal) return;
+        if (!modal) {
+            console.error('Modal não encontrado');
+            alert('Erro ao abrir o modal de criação de usuário');
+            return;
+        }
         // Reset form
         const form = document.getElementById('createUsuarioForm');
         if (form) form.reset();
@@ -337,7 +341,9 @@ class UsuariosManager {
         } else {
             this.populateAccessLevels();
         }
+        // Forçar exibição do modal com estilo flex
         modal.style.display = 'flex';
+        console.log('Modal aberto:', modal);
     }
 
     closeCreateModal() {
@@ -530,7 +536,7 @@ class UsuariosManager {
     }
 
     showAccessDenied() {
-        const container = document.getElementById('usuariosSection');
+        const container = document.getElementById('usuarios');
         if (container) {
             container.innerHTML = `
                 <div class="access-denied">

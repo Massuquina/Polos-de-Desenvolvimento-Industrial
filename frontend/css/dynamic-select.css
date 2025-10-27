@@ -1,0 +1,348 @@
+:root {
+    --ds-accent: #ff6a55; /* cor de destaque similar à imagem */
+    --ds-muted: #6b7280;
+    --ds-bg-hover: #f6f7f9;
+    --ds-border-color: #e0e0e0;
+    --ds-checkbox-bg: #f0f0f0;
+}
+
+.dynamic-select-container {
+    position: relative;
+    width: 100%;
+    font-family: 'Roboto', sans-serif;
+    margin-bottom: 15px;
+}
+
+.dynamic-select-input {
+    width: 100%;
+    padding: 12px 40px 12px 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 45px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    transition: all 0.25s ease;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.dynamic-select-input:hover {
+    border-color: #bdbdbd;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+}
+
+.dynamic-select-arrow {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    border-left: 2px solid #757575;
+    border-bottom: 2px solid #757575;
+    transform: translateY(-30%) rotate(-45deg);
+    transition: all 0.3s ease;
+}
+
+.dynamic-select-container.open .dynamic-select-arrow {
+    transform: translateY(-70%) rotate(135deg);
+}
+
+.dynamic-select-dropdown {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+    display: none;
+}
+
+.dynamic-select-dropdown.show {
+    display: block;
+    animation: fadeIn 0.3s forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.selected-animation {
+    animation: pulse 0.3s ease;
+}
+
+.dynamic-select-option {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.dynamic-select-option:hover {
+    background-color: var(--ds-bg-hover);
+}
+
+.dynamic-select-option.selected {
+    background-color: #fff4f1;
+    font-weight: 500;
+}
+
+/* Layout da opção: avatar/dot + textos + check à direita */
+.ds-option-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ds-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 0 0 1px #e5e7eb;
+}
+
+.ds-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #22c55e; /* verde ativo */
+}
+
+.ds-texts {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.ds-primary {
+    color: #1f2937;
+    font-weight: 500;
+}
+.ds-secondary {
+    color: var(--ds-muted);
+    font-size: 12px;
+}
+
+.ds-check {
+    margin-left: auto;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid #d1d5db;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.dynamic-select-option.selected .ds-check {
+    border-color: var(--ds-accent);
+}
+.dynamic-select-option.selected .ds-check::after {
+    content: '';
+    width: 6px;
+    height: 10px;
+    border-right: 2px solid var(--ds-accent);
+    border-bottom: 2px solid var(--ds-accent);
+    transform: rotate(45deg);
+}
+
+/* removido pseudo-elemento; usamos .ds-check */
+
+.dynamic-select-tag {
+    background-color: #ebf3ff;
+    border-radius: 16px;
+    padding: 4px 10px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+    animation: fadeIn 0.3s forwards;
+}
+
+.ds-placeholder {
+    white-space: nowrap;
+}
+
+.dynamic-select-tag:hover {
+    background-color: #deeaff;
+    transform: translateY(-1px);
+}
+:root {
+    --ds-accent: #ff6a55;
+    --ds-muted: #6b7280;
+    --ds-bg-hover: #f6f7f9;
+}
+.ds-checkbox {
+    margin-left: auto;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid #d1d5db;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #fff;
+}
+.dynamic-select-option.selected .ds-checkbox {
+    background-color: var(--ds-accent);
+    border-color: var(--ds-accent);
+}
+.dynamic-select-option.selected .ds-checkbox::after {
+    content: '';
+    width: 6px;
+    height: 10px;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(45deg);
+}
+
+/* Tema 1: Simples (primeira coluna) */
+.ds-theme--default .dynamic-select-options .option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 15px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.ds-theme--default .dynamic-select-options .option:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+
+.ds-theme--default .dynamic-select-options .option.selected {
+    background-color: rgba(0,0,0,0.03);
+}
+
+.ds-theme--default .option.selected .checkmark {
+    width: 18px;
+    height: 18px;
+    position: relative;
+}
+
+.ds-theme--default .option.selected .checkmark:after {
+    content: '';
+    width: 6px;
+    height: 10px;
+    border-right: 2px solid var(--ds-accent);
+    border-bottom: 2px solid var(--ds-accent);
+    transform: rotate(45deg);
+    position: absolute;
+    right: 0;
+    top: 50%;
+    margin-top: -7px;
+}
+
+/* Tema 2: Avatar (segunda coluna) */
+.ds-theme--avatar .dynamic-select-options .option {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.ds-theme--avatar .dynamic-select-options .option:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+
+.ds-theme--avatar .dynamic-select-options .option.selected {
+    background-color: rgba(0,0,0,0.03);
+}
+
+.ds-theme--avatar .option .avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-right: 10px;
+    background-color: #e0e0e0;
+    overflow: hidden;
+}
+
+.ds-theme--avatar .option .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ds-theme--avatar .option .text-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.ds-theme--avatar .option .primary-text {
+    font-weight: 500;
+}
+
+.ds-theme--avatar .option .secondary-text {
+    font-size: 12px;
+    color: var(--ds-muted);
+}
+
+.ds-theme--avatar .option.selected .checkmark {
+    width: 18px;
+    height: 18px;
+    position: relative;
+}
+
+.ds-theme--avatar .option.selected .checkmark:after {
+    content: '';
+    width: 6px;
+    height: 10px;
+    border-right: 2px solid var(--ds-accent);
+    border-bottom: 2px solid var(--ds-accent);
+    transform: rotate(45deg);
+    position: absolute;
+    right: 0;
+}
+
+/* Tema 3: Checkbox (terceira coluna) */
+.ds-theme--checkbox .dynamic-select-options .option {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.ds-theme--checkbox .dynamic-select-options .option:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+
+.ds-theme--checkbox .dynamic-select-options .option.selected {
+    background-color: rgba(0,0,0,0.03);
+}
+
+.ds-theme--checkbox .option .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 10px;
+    background-color: var(--ds-accent);
+}
+
+.ds-theme--checkbox .option .text-container {
+    flex: 1;
+}
+
+/* tema dropdown: borda do painel e espaçamento típico */
+.ds-theme--dropdown .dynamic-select-dropdown {
+    border: 1px solid #e5e7eb;
+}
+.ds-theme--dropdown .dynamic-select-option {
+    padding: 10px 14px;
+}
